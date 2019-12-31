@@ -29,10 +29,10 @@ import org.springframework.dao.UncategorizedDataAccessException;
 @SuppressWarnings("squid:MaximumInheritanceDepth") // It is the intended design
 public class MyBatisSystemException extends UncategorizedDataAccessException {
 
-  private static final long serialVersionUID = -5284728621670758939L;
+	private static final long serialVersionUID = -5284728621670758939L;
 
-  public MyBatisSystemException(Throwable cause) {
-    super(null, cause);
-  }
+	public MyBatisSystemException(Throwable cause) {
+		super(null, cause);
+	}
 
 }

@@ -1,18 +1,3 @@
-/**
- * Copyright 2010-2019 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mybatis.spring.annotation;
 
 import java.lang.annotation.Annotation;
@@ -21,9 +6,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.mybatis.logging.Logger;
+import org.mybatis.logging.LoggerFactory;
 import org.mybatis.spring.mapper.ClassPathMapperScanner;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
+import org.mybatis.spring.transaction.SpringManagedTransaction;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -51,109 +39,130 @@ import org.springframework.util.StringUtils;
  */
 public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
 
-  /**
-   * {@inheritDoc}
-   * 
-   * @deprecated Since 2.0.2, this method not used never.
-   */
-  @Override
-  @Deprecated
-  public void setResourceLoader(ResourceLoader resourceLoader) {
-    // NOP
-  }
+	private static final Logger LOGGER = LoggerFactory.getLogger(MapperScannerRegistrar.class);
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-    AnnotationAttributes mapperScanAttrs = AnnotationAttributes
-        .fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getName()));
-    if (mapperScanAttrs != null) {
-      registerBeanDefinitions(mapperScanAttrs, registry, generateBaseBeanName(importingClassMetadata, 0));
-    }
-  }
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * @deprecated Since 2.0.2, this method not used never.
+	 */
+	@Override
+	@Deprecated
+	public void setResourceLoader(ResourceLoader resourceLoader) {
+		// NOP
+	}
 
-  void registerBeanDefinitions(AnnotationAttributes annoAttrs, BeanDefinitionRegistry registry, String beanName) {
+	/**
+	 * importingClassMetadata 是引入 MapperScannerRegistrar类的注解的类的元信息
+	 * 例如:
+	 * @MapperScan(basePackages = "com.lzh.wechat.demo.dao.wechat")
+	 * public class WechatDataSourceConfig
+	 * 即 WechatDataSourceConfig类的元信息
+	 */
+	@Override
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+		// 获取@MapperScan注解里面的属性信息
+		AnnotationAttributes mapperScanAttrs = AnnotationAttributes
+				.fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getName()));
+		if (mapperScanAttrs != null) {
+			// 生成baseBeanName名字 ————>
+			// com.lzh.wechat.demo.common.mybatis.WechatDataSourceConfig#MapperScannerRegistrar#0
+			registerBeanDefinitions(mapperScanAttrs, registry, generateBaseBeanName(importingClassMetadata, 0));
+		}
+	}
 
-    BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
-    builder.addPropertyValue("processPropertyPlaceHolders", true);
+	@SuppressWarnings("rawtypes")
+	void registerBeanDefinitions(AnnotationAttributes annoAttrs, BeanDefinitionRegistry registry, String beanName) {
 
-    Class<? extends Annotation> annotationClass = annoAttrs.getClass("annotationClass");
-    if (!Annotation.class.equals(annotationClass)) {
-      builder.addPropertyValue("annotationClass", annotationClass);
-    }
+		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
+		builder.addPropertyValue("processPropertyPlaceHolders", true);
 
-    Class<?> markerInterface = annoAttrs.getClass("markerInterface");
-    if (!Class.class.equals(markerInterface)) {
-      builder.addPropertyValue("markerInterface", markerInterface);
-    }
+		// interface java.lang.annotation.Annotation
+		Class<? extends Annotation> annotationClass = annoAttrs.getClass("annotationClass");
+		if (!Annotation.class.equals(annotationClass)) {
+			builder.addPropertyValue("annotationClass", annotationClass);
+		}
 
-    Class<? extends BeanNameGenerator> generatorClass = annoAttrs.getClass("nameGenerator");
-    if (!BeanNameGenerator.class.equals(generatorClass)) {
-      builder.addPropertyValue("nameGenerator", BeanUtils.instantiateClass(generatorClass));
-    }
+		// class java.lang.Class
+		Class<?> markerInterface = annoAttrs.getClass("markerInterface");
+		if (!Class.class.equals(markerInterface)) {
+			builder.addPropertyValue("markerInterface", markerInterface);
+		}
 
-    Class<? extends MapperFactoryBean> mapperFactoryBeanClass = annoAttrs.getClass("factoryBean");
-    if (!MapperFactoryBean.class.equals(mapperFactoryBeanClass)) {
-      builder.addPropertyValue("mapperFactoryBeanClass", mapperFactoryBeanClass);
-    }
+		// interface org.springframework.beans.factory.support.BeanNameGenerator
+		Class<? extends BeanNameGenerator> generatorClass = annoAttrs.getClass("nameGenerator");
+		if (!BeanNameGenerator.class.equals(generatorClass)) {
+			builder.addPropertyValue("nameGenerator", BeanUtils.instantiateClass(generatorClass));
+		}
 
-    String sqlSessionTemplateRef = annoAttrs.getString("sqlSessionTemplateRef");
-    if (StringUtils.hasText(sqlSessionTemplateRef)) {
-      builder.addPropertyValue("sqlSessionTemplateBeanName", annoAttrs.getString("sqlSessionTemplateRef"));
-    }
+		// class org.mybatis.spring.mapper.MapperFactoryBean
+		Class<? extends MapperFactoryBean> mapperFactoryBeanClass = annoAttrs.getClass("factoryBean");
+		if (!MapperFactoryBean.class.equals(mapperFactoryBeanClass)) {
+			builder.addPropertyValue("mapperFactoryBeanClass", mapperFactoryBeanClass);
+		}
 
-    String sqlSessionFactoryRef = annoAttrs.getString("sqlSessionFactoryRef");
-    if (StringUtils.hasText(sqlSessionFactoryRef)) {
-      builder.addPropertyValue("sqlSessionFactoryBeanName", annoAttrs.getString("sqlSessionFactoryRef"));
-    }
+		String sqlSessionTemplateRef = annoAttrs.getString("sqlSessionTemplateRef");
+		if (StringUtils.hasText(sqlSessionTemplateRef)) {
+			builder.addPropertyValue("sqlSessionTemplateBeanName", annoAttrs.getString("sqlSessionTemplateRef"));
+		}
 
-    List<String> basePackages = new ArrayList<>();
-    basePackages.addAll(
-        Arrays.stream(annoAttrs.getStringArray("value")).filter(StringUtils::hasText).collect(Collectors.toList()));
+		// wechatSqlSessionFactory
+		String sqlSessionFactoryRef = annoAttrs.getString("sqlSessionFactoryRef");
+		if (StringUtils.hasText(sqlSessionFactoryRef)) {
+			builder.addPropertyValue("sqlSessionFactoryBeanName", annoAttrs.getString("sqlSessionFactoryRef"));
+		}
 
-    basePackages.addAll(Arrays.stream(annoAttrs.getStringArray("basePackages")).filter(StringUtils::hasText)
-        .collect(Collectors.toList()));
+		// [com.lzh.wechat.demo.dao.wechat]
+		List<String> basePackages = new ArrayList<>();
+		basePackages.addAll(Arrays.stream(annoAttrs.getStringArray("value")).filter(StringUtils::hasText)
+				.collect(Collectors.toList()));
 
-    basePackages.addAll(Arrays.stream(annoAttrs.getClassArray("basePackageClasses")).map(ClassUtils::getPackageName)
-        .collect(Collectors.toList()));
+		basePackages.addAll(Arrays.stream(annoAttrs.getStringArray("basePackages")).filter(StringUtils::hasText)
+				.collect(Collectors.toList()));
 
-    String lazyInitialization = annoAttrs.getString("lazyInitialization");
-    if (StringUtils.hasText(lazyInitialization)) {
-      builder.addPropertyValue("lazyInitialization", lazyInitialization);
-    }
+		basePackages.addAll(Arrays.stream(annoAttrs.getClassArray("basePackageClasses")).map(ClassUtils::getPackageName)
+				.collect(Collectors.toList()));
 
-    builder.addPropertyValue("basePackage", StringUtils.collectionToCommaDelimitedString(basePackages));
+		String lazyInitialization = annoAttrs.getString("lazyInitialization");
+		if (StringUtils.hasText(lazyInitialization)) {
+			builder.addPropertyValue("lazyInitialization", lazyInitialization);
+		}
 
-    registry.registerBeanDefinition(beanName, builder.getBeanDefinition());
+		// 将集合中全类名转换成 逗号 分隔的字符串
+		builder.addPropertyValue("basePackage", StringUtils.collectionToCommaDelimitedString(basePackages));
 
-  }
+		registry.registerBeanDefinition(beanName, builder.getBeanDefinition());
 
-  private static String generateBaseBeanName(AnnotationMetadata importingClassMetadata, int index) {
-    return importingClassMetadata.getClassName() + "#" + MapperScannerRegistrar.class.getSimpleName() + "#" + index;
-  }
+	}
 
-  /**
-   * A {@link MapperScannerRegistrar} for {@link MapperScans}.
-   * 
-   * @since 2.0.0
-   */
-  static class RepeatingRegistrar extends MapperScannerRegistrar {
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-      AnnotationAttributes mapperScansAttrs = AnnotationAttributes
-          .fromMap(importingClassMetadata.getAnnotationAttributes(MapperScans.class.getName()));
-      if (mapperScansAttrs != null) {
-        AnnotationAttributes[] annotations = mapperScansAttrs.getAnnotationArray("value");
-        for (int i = 0; i < annotations.length; i++) {
-          registerBeanDefinitions(annotations[i], registry, generateBaseBeanName(importingClassMetadata, i));
-        }
-      }
-    }
-  }
+	private static String generateBaseBeanName(AnnotationMetadata importingClassMetadata, int index) {
+		String baseBeanName = importingClassMetadata.getClassName() + "#" + MapperScannerRegistrar.class.getSimpleName()
+				+ "#" + index;
+		LOGGER.trace(() -> "baseBeanName:" + baseBeanName);
+		return baseBeanName;
+	}
+
+	/**
+	 * A {@link MapperScannerRegistrar} for {@link MapperScans}.
+	 * 
+	 * @since 2.0.0
+	 */
+	static class RepeatingRegistrar extends MapperScannerRegistrar {
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
+				BeanDefinitionRegistry registry) {
+			AnnotationAttributes mapperScansAttrs = AnnotationAttributes
+					.fromMap(importingClassMetadata.getAnnotationAttributes(MapperScans.class.getName()));
+			if (mapperScansAttrs != null) {
+				AnnotationAttributes[] annotations = mapperScansAttrs.getAnnotationArray("value");
+				for (int i = 0; i < annotations.length; i++) {
+					registerBeanDefinitions(annotations[i], registry, generateBaseBeanName(importingClassMetadata, i));
+				}
+			}
+		}
+	}
 
 }

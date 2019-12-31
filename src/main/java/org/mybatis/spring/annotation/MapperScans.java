@@ -40,5 +40,5 @@ import java.lang.annotation.Target;
 @Documented
 @Import(MapperScannerRegistrar.RepeatingRegistrar.class)
 public @interface MapperScans {
-  MapperScan[] value();
+	MapperScan[] value();
 }

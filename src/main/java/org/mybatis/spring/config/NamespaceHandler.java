@@ -27,12 +27,12 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  */
 public class NamespaceHandler extends NamespaceHandlerSupport {
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void init() {
-    registerBeanDefinitionParser("scan", new MapperScannerBeanDefinitionParser());
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void init() {
+		registerBeanDefinitionParser("scan", new MapperScannerBeanDefinitionParser());
+	}
 
 }
