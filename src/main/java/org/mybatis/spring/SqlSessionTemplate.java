@@ -234,6 +234,7 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void select(String statement, ResultHandler handler) {
 		this.sqlSessionProxy.select(statement, handler);
@@ -242,6 +243,7 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void select(String statement, Object parameter, ResultHandler handler) {
 		this.sqlSessionProxy.select(statement, parameter, handler);
@@ -250,6 +252,7 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void select(String statement, Object parameter, RowBounds rowBounds, ResultHandler handler) {
 		this.sqlSessionProxy.select(statement, parameter, rowBounds, handler);

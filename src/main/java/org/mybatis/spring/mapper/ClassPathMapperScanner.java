@@ -69,6 +69,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 
 	private Class<?> markerInterface;
 
+	@SuppressWarnings("rawtypes")
 	private Class<? extends MapperFactoryBean> mapperFactoryBeanClass = MapperFactoryBean.class;
 
 	public ClassPathMapperScanner(BeanDefinitionRegistry registry) {
@@ -133,6 +134,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 	 *          the {@code MapperFactoryBean} class
 	 * @since 2.0.1
 	 */
+	@SuppressWarnings("rawtypes")
 	public void setMapperFactoryBeanClass(Class<? extends MapperFactoryBean> mapperFactoryBeanClass) {
 		this.mapperFactoryBeanClass = mapperFactoryBeanClass == null ? MapperFactoryBean.class : mapperFactoryBeanClass;
 	}

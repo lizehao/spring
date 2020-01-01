@@ -65,7 +65,6 @@ public abstract class SqlSessionDaoSupport extends DaoSupport {
    * @return the new SqlSessionTemplate instance
    * @see #setSqlSessionFactory
    */
-  @SuppressWarnings("WeakerAccess")
   protected SqlSessionTemplate createSqlSessionTemplate(SqlSessionFactory sqlSessionFactory) {
     return new SqlSessionTemplate(sqlSessionFactory);
   }

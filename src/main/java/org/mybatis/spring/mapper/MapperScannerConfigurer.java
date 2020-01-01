@@ -109,6 +109,7 @@ public class MapperScannerConfigurer
 
 	private Class<?> markerInterface;
 
+	@SuppressWarnings("rawtypes")
 	private Class<? extends MapperFactoryBean> mapperFactoryBeanClass;
 
 	private ApplicationContext applicationContext;
@@ -270,6 +271,7 @@ public class MapperScannerConfigurer
 	 *          The class of the MapperFactoryBean
 	 * @since 2.0.1
 	 */
+	@SuppressWarnings("rawtypes")
 	public void setMapperFactoryBeanClass(Class<? extends MapperFactoryBean> mapperFactoryBeanClass) {
 		this.mapperFactoryBeanClass = mapperFactoryBeanClass;
 	}
